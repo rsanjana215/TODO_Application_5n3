@@ -1,54 +1,79 @@
-// server.js
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
+const express = require("express");
+const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
 const PORT = 5001;
 
-// Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-// In-memory "database" (Resets whenever the server restarts)
-const registrations = [];
+// Serve index.html
+app.use(express.static(__dirname));
 
-// Route: Handle Event Registration Form Submission
-app.post('/api/register', (req, res) => {
-    const { eventId, attendeeName, attendeeEmail } = req.body;
+// Persistent data file
+const dataDir = path.join(__dirname, "data");
+const dataFile = path.join(dataDir, "registrations.json");
 
-    // Validation
-    if (!eventId || !attendeeName || !attendeeEmail) {
-        return res.status(400).json({ success: false, message: 'All fields are required.' });
+// Create data directory and file if they don't exist
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+}
+
+if (!fs.existsSync(dataFile)) {
+    fs.writeFileSync(dataFile, "[]");
+}
+
+// Read registrations from file
+function getRegistrations() {
+    return JSON.parse(fs.readFileSync(dataFile, "utf8"));
+}
+
+// Save registrations to file
+function saveRegistrations(registrations) {
+    fs.writeFileSync(
+        dataFile,
+        JSON.stringify(registrations, null, 2)
+    );
+}
+
+// Register an event
+app.post("/api/register", (req, res) => {
+    const { event, name, email } = req.body;
+
+    if (!event || !name || !email) {
+        return res.status(400).json({
+            message: "All fields are required"
+        });
     }
 
-    // Create a new registration object with a fake unique ID and timestamp
-    const newRegistration = {
-        id: Math.random().toString(36).substr(2, 9),
-        eventId,
-        attendeeName,
-        attendeeEmail,
-        registeredAt: new Date()
+    const registrations = getRegistrations();
+
+    const registration = {
+        id: registrations.length + 1,
+        event,
+        name,
+        email,
+        registeredAt: new Date().toISOString()
     };
 
-    // Save to our in-memory array
-    registrations.push(newRegistration);
+    registrations.push(registration);
+    saveRegistrations(registrations);
 
-    console.log('Current Registrations:', registrations); // View data in your terminal
-
-    return res.status(201).json({
-        success: true,
-        message: 'Successfully registered for the event!',
-        data: newRegistration
+    res.status(201).json({
+        message: "Registration successful",
+        registration
     });
 });
 
-// Route: Optional helper to view all registrations via browser or Postman
-app.get('/api/registrations', (req, res) => {
-    res.json(registrations);
+// View all registrations
+app.get("/api/registrations", (req, res) => {
+    res.json(getRegistrations());
 });
 
-// Start Service
+// Start server
 app.listen(PORT, () => {
-    console.log(`🚀 Registration Microservice (In-Memory) running on port ${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
+});
 });

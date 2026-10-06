@@ -1,0 +1,13 @@
+{
+  "name": "todo-application",
+  "version": "1.0.0",
+  "description": "Event Registration Application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  }
+}

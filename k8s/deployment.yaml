@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-registration
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: event-registration
+  template:
+    metadata:
+      labels:
+        app: event-registration
+    spec:
+      containers:
+        - name: event-registration
+          image: event-registration:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5001
+          volumeMounts:
+            - name: registration-data
+              mountPath: /app/data
+      volumes:
+        - name: registration-data
+          persistentVolumeClaim:
+            claimName: event-registration-pvc
